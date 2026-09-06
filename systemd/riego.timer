@@ -1,0 +1,12 @@
+[Unit]
+Description=Riego automatizado del huerto - horario
+
+[Timer]
+OnCalendar=*-*-* 06:00:00
+
+# false a propósito: si la Pi estuvo apagada a las 6 AM, NO queremos
+# que riegue al encenderla a las 3 PM bajo el sol.
+Persistent=false
+
+[Install]
+WantedBy=timers.target

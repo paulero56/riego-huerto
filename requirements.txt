@@ -1,0 +1,5 @@
+PyYAML>=6.0
+
+# Solo en la Raspberry Pi. En otras máquinas el script corre en modo
+# simulación y no lo necesita.
+# RPi.GPIO>=0.7.1

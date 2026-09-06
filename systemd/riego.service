@@ -1,0 +1,18 @@
+[Unit]
+Description=Riego automatizado del huerto
+After=network.target
+
+[Service]
+Type=oneshot
+User=pi
+WorkingDirectory=/home/pi/riego-huerto
+ExecStart=/usr/bin/python3 /home/pi/riego-huerto/riego.py
+
+# Si el servicio se detiene por cualquier motivo, cierra todo.
+ExecStopPost=/usr/bin/python3 /home/pi/riego-huerto/riego.py --cerrar-todo
+
+# Tope duro: si el ciclo se cuelga, systemd lo mata a las 3 horas.
+TimeoutStartSec=3h
+
+[Install]
+WantedBy=multi-user.target

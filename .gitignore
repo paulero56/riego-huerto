@@ -1,0 +1,16 @@
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editores
+.vscode/
+*.swp
+.DS_Store
+
+# Config local con datos de la instalación real
+config.local.yaml

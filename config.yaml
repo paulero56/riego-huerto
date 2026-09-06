@@ -1,0 +1,54 @@
+# Configuración del sistema de riego
+# Los pines usan numeración BCM (la que se usa en el código), no física.
+
+hardware:
+  # true  = usa GPIO real (en la Raspberry Pi)
+  # false = modo simulación, imprime en pantalla sin tocar hardware
+  gpio_real: false
+
+  # Los relés de este módulo son de disparo por nivel ALTO:
+  # GPIO en HIGH cierra el relé y energiza la válvula.
+  # Si compras un módulo de disparo por nivel BAJO, pon false.
+  rele_activo_en_alto: true
+
+pines:
+  bomba: 17
+  flotador: 27          # entrada: HIGH = hay agua en el tinaco
+
+zonas:
+  - nombre: "Sección 1 - Norte"
+    pin: 22
+    minutos: 15
+  - nombre: "Sección 2 - Noreste"
+    pin: 23
+    minutos: 15
+  - nombre: "Sección 3 - Centro"
+    pin: 24
+    minutos: 15
+  - nombre: "Sección 4 - Suroeste"
+    pin: 25
+    minutos: 15
+  - nombre: "Sección 5 - Sur"
+    pin: 5
+    minutos: 15
+
+seguridad:
+  # Segundos entre abrir la válvula y arrancar la bomba.
+  # Evita que la bomba trabaje contra válvulas cerradas (deadhead).
+  retardo_valvula_bomba: 3
+
+  # Segundos entre apagar la bomba y cerrar la válvula.
+  # Deja que la presión baje antes de cerrar.
+  retardo_bomba_valvula: 5
+
+  # Tope duro por zona. Si la config pide más, el código lo limita.
+  # Protege contra un error de dedo que vaciaría el tinaco.
+  max_minutos_por_zona: 30
+
+  # Aborta el riego si el flotador indica tinaco vacío.
+  # Ponlo en false solo si aún no instalas el flotador.
+  requiere_flotador: false
+
+registro:
+  archivo: "riego.log"
+  nivel: "INFO"
