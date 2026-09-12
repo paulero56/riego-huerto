@@ -2,21 +2,26 @@
 """
 Sistema de riego automatizado para huerto.
 
-Riega N zonas en secuencia, una a la vez, respetando el orden de
-operaciones que protege la bomba:
+Diseno: dos tinacos de 2000 L alimentados de la red municipal. Una
+valvula maestra controla la salida hacia el riego, y cinco valvulas
+de zona reparten el agua por secciones.
 
-    abrir valvula -> esperar -> arrancar bomba -> regar
-    -> apagar bomba -> esperar -> cerrar valvula
+Riega las zonas en secuencia, una a la vez, respetando este orden:
 
-Nunca al reves. Una bomba centrifuga presurizando contra valvulas
-cerradas se dana en minutos.
+    abrir zona -> esperar -> abrir maestra -> regar
+    -> cerrar maestra -> esperar -> cerrar zona
+
+El orden importa. Abrir la zona primero evita presurizar contra un
+extremo cerrado, y cerrar la maestra antes deja que la linea se
+despresurice a traves de la zona abierta. Eso reduce el golpe de
+ariete, que con el tiempo rompe conexiones.
 
 Uso:
     python3 riego.py                  # ciclo completo, todas las zonas
     python3 riego.py --zona 2         # solo la zona 2
     python3 riego.py --minutos 1      # sobrescribe el tiempo (pruebas)
     python3 riego.py --test           # ciclo rapido de 3s por zona
-    python3 riego.py --cerrar-todo    # apaga todo y sale
+    python3 riego.py --cerrar-todo    # cierra todo y sale
 """
 
 import argparse
@@ -57,7 +62,7 @@ class ControladorGPIO:
             except ImportError:
                 self.log.error(
                     "No se pudo importar RPi.GPIO. "
-                    "Estas en una Raspberry Pi? Instala: pip install RPi.GPIO. "
+                    "Estas en una Raspberry Pi? Instala: sudo apt install python3-rpi.gpio. "
                     "Para probar sin hardware, pon gpio_real: false en config.yaml"
                 )
                 raise
@@ -68,9 +73,9 @@ class ControladorGPIO:
             self.log.info("MODO SIMULACION - no se tocara ningun pin real")
 
     def configurar_salida(self, pin: int) -> None:
-        """Configura un pin como salida y lo deja apagado."""
+        """Configura un pin como salida y lo deja cerrado."""
         if self.real:
-            # Se configura ya en estado inactivo para que el relé no
+            # Se configura ya en estado inactivo para que el rele no
             # haga un pulso al arrancar el programa.
             inactivo = self.gpio.LOW if self.activo_en_alto else self.gpio.HIGH
             self.gpio.setup(pin, self.gpio.OUT, initial=inactivo)
@@ -81,19 +86,19 @@ class ControladorGPIO:
         if self.real:
             self.gpio.setup(pin, self.gpio.IN, pull_up_down=self.gpio.PUD_DOWN)
 
-    def encender(self, pin: int, etiqueta: str) -> None:
+    def abrir(self, pin: int, etiqueta: str) -> None:
         if self.real:
             nivel = self.gpio.HIGH if self.activo_en_alto else self.gpio.LOW
             self.gpio.output(pin, nivel)
         self._estado[pin] = True
-        self.log.info("ON   pin %-3s  %s", pin, etiqueta)
+        self.log.info("ABRE   pin %-3s  %s", pin, etiqueta)
 
-    def apagar(self, pin: int, etiqueta: str) -> None:
+    def cerrar(self, pin: int, etiqueta: str) -> None:
         if self.real:
             nivel = self.gpio.LOW if self.activo_en_alto else self.gpio.HIGH
             self.gpio.output(pin, nivel)
         self._estado[pin] = False
-        self.log.info("OFF  pin %-3s  %s", pin, etiqueta)
+        self.log.info("CIERRA pin %-3s  %s", pin, etiqueta)
 
     def leer(self, pin: int) -> bool:
         if self.real:
@@ -101,7 +106,7 @@ class ControladorGPIO:
         # En simulacion asumimos que siempre hay agua.
         return True
 
-    def encendidos(self) -> list[int]:
+    def abiertos(self) -> list[int]:
         return [p for p, on in self._estado.items() if on]
 
     def liberar(self) -> None:
@@ -134,12 +139,12 @@ class SistemaRiego:
         )
 
         pines = config["pines"]
-        self.pin_bomba = pines["bomba"]
+        self.pin_maestra = pines["valvula_maestra"]
         self.pin_flotador = pines["flotador"]
 
         seg = config["seguridad"]
-        self.retardo_valvula_bomba = seg["retardo_valvula_bomba"]
-        self.retardo_bomba_valvula = seg["retardo_bomba_valvula"]
+        self.retardo_zona_maestra = seg["retardo_zona_maestra"]
+        self.retardo_maestra_zona = seg["retardo_maestra_zona"]
         self.max_minutos = seg["max_minutos_por_zona"]
         self.requiere_flotador = seg["requiere_flotador"]
 
@@ -156,10 +161,10 @@ class SistemaRiego:
         """Configura los pines y deja todo en estado conocido.
 
         Esto es deliberado: si se fue la luz a media operacion, al volver
-        no sabemos como quedaron las valvulas. Arrancar cerrando todo
-        elimina esa incertidumbre.
+        no sabemos como quedaron las valvulas fisicamente. Arrancar
+        cerrando todo elimina esa incertidumbre.
         """
-        self.gpio.configurar_salida(self.pin_bomba)
+        self.gpio.configurar_salida(self.pin_maestra)
         for zona in self.zonas:
             self.gpio.configurar_salida(zona.pin)
         self.gpio.configurar_entrada(self.pin_flotador)
@@ -168,12 +173,12 @@ class SistemaRiego:
         self.cerrar_todo(silencioso=True)
 
     def cerrar_todo(self, silencioso: bool = False) -> None:
-        """Apaga la bomba primero, luego las valvulas. El orden importa."""
+        """Cierra la maestra primero, luego las zonas. El orden importa."""
         if not silencioso:
             self.log.warning("Cerrando todo")
-        self.gpio.apagar(self.pin_bomba, "BOMBA")
+        self.gpio.cerrar(self.pin_maestra, "VALVULA MAESTRA")
         for zona in self.zonas:
-            self.gpio.apagar(zona.pin, f"valvula {zona.nombre}")
+            self.gpio.cerrar(zona.pin, f"zona {zona.nombre}")
 
     def liberar(self) -> None:
         self.gpio.liberar()
@@ -181,11 +186,12 @@ class SistemaRiego:
     # -- comprobaciones -------------------------------------------------
 
     def hay_agua(self) -> bool:
+        """Consulta el flotador de los tinacos."""
         if not self.requiere_flotador:
             return True
         nivel = self.gpio.leer(self.pin_flotador)
         if not nivel:
-            self.log.error("Flotador indica tinaco vacio")
+            self.log.error("Flotador indica tinacos vacios")
         return nivel
 
     def _minutos_seguros(self, pedidos: float) -> float:
@@ -225,27 +231,29 @@ class SistemaRiego:
         self.log.info("--- %s | %.1f min ---", zona.nombre, duracion)
 
         try:
-            # 1. Abrir la valvula ANTES de arrancar la bomba.
-            self.gpio.encender(zona.pin, f"valvula {zona.nombre}")
-            if not self._esperar(self.retardo_valvula_bomba, "apertura"):
+            # 1. Abrir la zona ANTES que la maestra, para no presurizar
+            #    contra un extremo cerrado.
+            self.gpio.abrir(zona.pin, f"zona {zona.nombre}")
+            if not self._esperar(self.retardo_zona_maestra, "apertura de zona"):
                 return False
 
-            # 2. Ahora si, la bomba tiene por donde sacar el agua.
-            self.gpio.encender(self.pin_bomba, "BOMBA")
+            # 2. Ahora si, el agua tiene por donde salir.
+            self.gpio.abrir(self.pin_maestra, "VALVULA MAESTRA")
 
             # 3. Regar.
             completo = self._esperar(segundos, "riego")
 
-            # 4. Apagar la bomba ANTES de cerrar la valvula.
-            self.gpio.apagar(self.pin_bomba, "BOMBA")
-            self._esperar(self.retardo_bomba_valvula, "despresurizacion")
+            # 4. Cerrar la maestra ANTES que la zona. La linea se
+            #    despresuriza a traves de la zona, aun abierta.
+            self.gpio.cerrar(self.pin_maestra, "VALVULA MAESTRA")
+            self._esperar(self.retardo_maestra_zona, "despresurizacion")
 
             return completo
 
         finally:
-            # Pase lo que pase (error, Ctrl+C, excepcion), la valvula
-            # se cierra. Es la garantia de que no queda agua corriendo.
-            self.gpio.apagar(zona.pin, f"valvula {zona.nombre}")
+            # Pase lo que pase (error, Ctrl+C, excepcion), la zona se
+            # cierra. Es la garantia de que no queda agua corriendo.
+            self.gpio.cerrar(zona.pin, f"zona {zona.nombre}")
 
     def ciclo_completo(self, minutos: float | None = None) -> None:
         inicio = time.monotonic()
@@ -321,7 +329,7 @@ def main() -> int:
     ap.add_argument("--test", action="store_true",
                     help="Ciclo rapido: 3 segundos por zona")
     ap.add_argument("--cerrar-todo", action="store_true",
-                    help="Apaga bomba y valvulas, y termina")
+                    help="Cierra maestra y zonas, y termina")
     args = ap.parse_args()
 
     config = cargar_config(args.config)

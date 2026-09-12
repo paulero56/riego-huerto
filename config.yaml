@@ -1,19 +1,29 @@
 # Configuración del sistema de riego
-# Los pines usan numeración BCM (la que se usa en el código), no física.
+#
+# Diseño: dos tinacos de 2000 L alimentados de la red municipal.
+# Una válvula maestra controla la salida hacia el riego, y cinco
+# válvulas de zona reparten el agua por secciones.
+#
+# Los pines usan numeración BCM (la del código), no la física del conector.
 
 hardware:
   # true  = usa GPIO real (en la Raspberry Pi)
   # false = modo simulación, imprime en pantalla sin tocar hardware
   gpio_real: false
 
-  # Los relés de este módulo son de disparo por nivel ALTO:
-  # GPIO en HIGH cierra el relé y energiza la válvula.
-  # Si compras un módulo de disparo por nivel BAJO, pon false.
+  # Los relés de disparo por nivel ALTO cierran el contacto con GPIO en HIGH.
+  # Si tu módulo es de disparo por nivel BAJO, pon false.
   rele_activo_en_alto: true
 
 pines:
-  bomba: 17
-  flotador: 27          # entrada: HIGH = hay agua en el tinaco
+  # Válvula maestra: va aguas arriba de las de zona.
+  # Solo se abre durante el riego, así la línea principal no queda
+  # presurizada las 24 horas. Si una zona gotea o se rompe un tubo,
+  # la fuga dura minutos y no días.
+  valvula_maestra: 17
+
+  # Entrada: HIGH = hay agua en los tinacos
+  flotador: 27
 
 zonas:
   - nombre: "Sección 1 - Norte"
@@ -33,20 +43,21 @@ zonas:
     minutos: 15
 
 seguridad:
-  # Segundos entre abrir la válvula y arrancar la bomba.
-  # Evita que la bomba trabaje contra válvulas cerradas (deadhead).
-  retardo_valvula_bomba: 3
+  # Segundos entre abrir la válvula de zona y abrir la maestra.
+  # Evita presurizar contra un extremo cerrado.
+  retardo_zona_maestra: 3
 
-  # Segundos entre apagar la bomba y cerrar la válvula.
-  # Deja que la presión baje antes de cerrar.
-  retardo_bomba_valvula: 5
+  # Segundos entre cerrar la maestra y cerrar la zona.
+  # Deja que la línea se despresurice a través de la zona abierta,
+  # lo que reduce el golpe de ariete.
+  retardo_maestra_zona: 5
 
-  # Tope duro por zona. Si la config pide más, el código lo limita.
-  # Protege contra un error de dedo que vaciaría el tinaco.
+  # Tope duro por zona. Si la configuración pide más, el código lo limita.
+  # Protege contra un error de dedo que vaciaría los tinacos.
   max_minutos_por_zona: 30
 
-  # Aborta el riego si el flotador indica tinaco vacío.
-  # Ponlo en false solo si aún no instalas el flotador.
+  # Aborta el riego si el flotador indica tinacos vacíos.
+  # Cámbialo a true cuando instales el flotador.
   requiere_flotador: false
 
 registro:
