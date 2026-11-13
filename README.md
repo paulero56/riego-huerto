@@ -22,7 +22,7 @@ Huerto de 1 hectárea, 5 secciones de ~10 árboles, dos tinacos de 2000 L alimen
    └──────┬───────┘                                   │
           │                                           │
    ┌──────┴──────┬──────┬──────┬──────┐              │
-  Z1     Z2     Z3     Z4     Z5                      │
+ Bosque Norte  Sur  Huerto Porsche                    │
                                                       │
               Raspberry Pi ──── relés ────────────────┘
 ```
@@ -92,7 +92,7 @@ pines:
   flotador: 27
 
 zonas:
-  - nombre: "Sección 1 - Norte"
+  - nombre: "Bosque"
     pin: 22
     minutos: 15
 ```

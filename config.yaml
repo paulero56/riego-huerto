@@ -26,19 +26,19 @@ pines:
   flotador: 27
 
 zonas:
-  - nombre: "Sección 1 - Norte"
+  - nombre: "Bosque"
     pin: 22
     minutos: 15
-  - nombre: "Sección 2 - Noreste"
+  - nombre: "Norte"
     pin: 23
     minutos: 15
-  - nombre: "Sección 3 - Centro"
+  - nombre: "Sur"
     pin: 24
     minutos: 15
-  - nombre: "Sección 4 - Suroeste"
+  - nombre: "Huerto"
     pin: 25
     minutos: 15
-  - nombre: "Sección 5 - Sur"
+  - nombre: "Porsche"
     pin: 5
     minutos: 15
 

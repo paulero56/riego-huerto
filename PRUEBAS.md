@@ -41,11 +41,11 @@ Los pines de la Pi se nombran de dos formas y es fácil confundirse. La columna 
 | Alimentación | 5V | **2** | VCC del módulo |
 | Tierra | GND | **6** | GND del módulo |
 | Válvula maestra | 17 | **11** | IN6 |
-| Zona 1 | 22 | **15** | IN1 |
-| Zona 2 | 23 | **16** | IN2 |
-| Zona 3 | 24 | **18** | IN3 |
-| Zona 4 | 25 | **22** | IN4 |
-| Zona 5 | 5 | **29** | IN5 |
+| Zona 1 - Bosque | 22 | **15** | IN1 |
+| Zona 2 - Norte | 23 | **16** | IN2 |
+| Zona 3 - Sur | 24 | **18** | IN3 |
+| Zona 4 - Huerto | 25 | **22** | IN4 |
+| Zona 5 - Porsche | 5 | **29** | IN5 |
 
 Los canales IN7 e IN8 quedan libres para el sensor de lluvia más adelante.
 
