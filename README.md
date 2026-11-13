@@ -48,8 +48,8 @@ Es práctica estándar en riego profesional, no un invento de este proyecto.
 | Fase | Descripción | Estado |
 |---|---|---|
 | 1 | Raspberry Pi funcionando, GPIO verificado | ✅ |
-| 2 | Relés respondiendo en banco de pruebas | pendiente |
-| 3 | Una válvula abriendo por software | pendiente |
+| 2 | Relés respondiendo en banco de pruebas | ✅ |
+| 3 | Una válvula abriendo por software | ✅ en seco · falta la prueba con agua |
 | 4 | Instalación en campo | pendiente |
 | 5 | Automatización con systemd | pendiente |
 
